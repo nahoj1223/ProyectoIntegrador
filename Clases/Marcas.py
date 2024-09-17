@@ -1,4 +1,4 @@
-class Estados:
+class Marcas:
     id: int;
 
     def GetId(self) -> int: 

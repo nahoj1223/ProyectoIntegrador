@@ -1,10 +1,11 @@
-from Clases import Conexion
-from Clases import Estados
-from Clases import Personas
+import datetime
+from Clases import Database
+from Clases import Marcas
+from Clases import Zapatos
 
-print("Conexion en Python con VS Code");
-conexion: Conexion = Conexion.Conexion();
-# conexion.NonQueryBasico();
-# conexion.ConnectionBasica();
-# conexion.ConnectionBasica1();
-conexion.ConnectionBasica2();
+objDatabase: Database = Database.Database();
+
+objDatabase.OpenConnectionDB();
+#objDatabase.InsertarZapato();
+objDatabase.ConsultarZapatos();
+objDatabase.CloseConnectionDB();
