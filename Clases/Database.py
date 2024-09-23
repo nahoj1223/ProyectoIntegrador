@@ -14,21 +14,21 @@ class Database:
         user=user_ptyhon;
         password=Clas3s1Nt2024_!""";
     
-    self.conexion = None
+    self.conexion = None;
     
   def OpenConnectionDB(self) -> None:  
     try:
       self.conexion = pyodbc.connect(self.strConnection);
-      print("Conexión a la Base de Datos Exitosa")
+      print("Conexión a la Base de Datos Exitosa");
     except Exception as e:
-      print("Conexión a la Base de Datos Fallida: "+str(e))
+      print("Conexión a la Base de Datos Fallida: "+str(e));
         
   def CloseConnectionDB(self) -> None:  
     try:
       self.conexion.close();
-      print("Cierre de la Base de Datos Exitosa")
+      print("Cierre de la Base de Datos Exitosa");
     except Exception as e:
-      print("Cierre de la Base de Datos Fallida: "+str(e))
+      print("Cierre de la Base de Datos Fallida: "+str(e));
 
   def ConsultarZapatos(self) -> None:  
 
@@ -56,7 +56,7 @@ class Database:
       ls_zapatos.append(zapato);
     
     #CIERRE DE TRANSACCIÓN
-    cursor.execute("COMMIT;")
+    cursor.execute("COMMIT;");
     cursor.close();
     
     #IMPRESIÓN DE LA CONSULTA CON OBJETOS
@@ -68,32 +68,54 @@ class Database:
               str(zapato.GetDisponibilidad()) + " - " + 
               str(zapato.GetIdMarca()) + " - " + 
               zapato.GetMarca().GetNombre());
-      
-  def InsertarZapato(self):
+    
+  def ConsultarMarcas(self) -> None:  
 
-    #PARAMETROS DEL INSERT
-    modelo = "Prueba"
-    talla = 35
-    fecha_fabricacion = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    disponibilidad = 1
-    id_marca = 5
+    #EJECUCIÓN DEL PROCEDURE
+    consulta: str = """{CALL proc_select_marcas();}""";
+    cursor = self.conexion.cursor();
+    cursor.execute(consulta);
+
+    #RECORRIDO DEL RESULTADO PARA TRABAJAR CON OBJETOS
+    ls_marcas: list = [];
+    for elemento in cursor:
+      marca = Marcas.Marcas();
+      marca.SetId(elemento[0]);
+      marca.SetNombre(elemento[1]);
+      
+      ls_marcas.append(marca);
+    
+    #CIERRE DE TRANSACCIÓN
+    cursor.execute("COMMIT;");
+    cursor.close();
+    
+    #IMPRESIÓN DE LA CONSULTA CON OBJETOS
+    for marca in ls_marcas:
+      print(  str(marca.GetId()) + " - " + 
+              marca.GetNombre());
+      
+  def EjecutarSP(self, nombreSp: str, parametros: list)-> None:
+
+    #GENERAMOS LOS MARCADORES PARA LOS ATRIBUTOS DEL SP
+    marcadores: list = ','.join(["'%s'" for _ in parametros]);
     
     #CONSTRUCCIÓN DEL QUERY
-    consulta: str = "{"+"CALL proc_insertar_zapato('{}',{},'{}',{},{},@p_resultado);".format(modelo,
-                                                                                        str(talla),
-                                                                                        fecha_fabricacion,
-                                                                                        str(disponibilidad),
-                                                                                        str(id_marca))+"}"
-    #EJECUCIÓN PROCEDURE
-    cursor = self.conexion.cursor();
-    cursor.execute(consulta)
-    
-    #SELECCIÓN DE RESULTADO
-    cursor.execute("SELECT @p_resultado;")
-    resultado = cursor.fetchone()[0]
+    consulta = f"CALL {nombreSp}({marcadores}, @p_resultado);";
 
-    print("Resultado:", resultado)
+    try:
+      #EJECUCIÓN PROCEDURE
+      cursor = self.conexion.cursor();
+      cursor.execute(consulta % parametros);
+      
+      #SELECCIÓN DE RESULTADO
+      cursor.execute("SELECT @p_resultado;");
+      resultado = cursor.fetchone()[0];
+      
+    except Exception as Error:
+      resultado = str(Error);
+    
+    print("Resultado:", resultado);
 
     #CIERRE DE TRANSACCIÓN
-    cursor.execute("COMMIT;")
-    cursor.close()
+    cursor.execute("COMMIT;");
+    cursor.close();

@@ -10,7 +10,7 @@ CREATE TABLE `db_zapatos`.`marcas` (
 
 CREATE TABLE `db_zapatos`.`zapatos` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `modelo` VARCHAR(50) NOT NULL ,
+  `modelo` VARCHAR(50) NOT NULL,
   `talla` INT NOT NULL,
   `fecha_fabricacion` DATETIME NOT NULL,
   `disponibilidad` BIT NOT NULL,
@@ -61,7 +61,25 @@ BEGIN
        z.id_marca,
        m.nombre_marca
     FROM db_zapatos.zapatos z
-    INNER JOIN db_zapatos.marcas m ON m.id = z.id_marca;
+    INNER JOIN db_zapatos.marcas m ON m.id = z.id_marca
+    ORDER BY z.id ASC;
+END$$ 
+
+DELIMITER $$
+CREATE PROCEDURE `db_zapatos`.`proc_select_marcas`()	
+BEGIN
+
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION 
+    BEGIN
+    	DECLARE v_error_message VARCHAR(255);
+        GET DIAGNOSTICS CONDITION 1 v_error_message = MESSAGE_TEXT;
+        SELECT CONCAT('Error: ', v_error_message) AS ErrorMensaje;
+    END;
+
+	SELECT id,
+       nombre_marca
+    FROM db_zapatos.marcas
+    ORDER BY id ASC;
 END$$ 
 
 DELIMITER $$
@@ -69,8 +87,38 @@ CREATE PROCEDURE proc_insertar_zapato(
     IN modelo VARCHAR(50), 
     IN talla INT, 
     IN fecha_fabricacion DATETIME, 
-    IN disponibilidad BIT, 
+    IN p_disponibilidad VARCHAR(10), 
     IN id_marca INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE v_error INT DEFAULT 0;
+	DECLARE disponibilidad BIT;
+    
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1 @p_error_message = MESSAGE_TEXT;
+        SET p_resultado = CONCAT('Error: ', @p_error_message);
+        SET v_error = 1;
+    END;
+
+    SET disponibilidad = CASE
+        WHEN p_disponibilidad = 'true' THEN 1
+        WHEN p_disponibilidad = 'false' THEN 0
+        ELSE NULL
+    END;
+
+    INSERT INTO zapatos (modelo, talla, fecha_fabricacion, disponibilidad, id_marca)
+    VALUES (modelo, talla, fecha_fabricacion, disponibilidad, id_marca);
+
+    IF v_error = 0 THEN
+        SET p_resultado = 'Zapato Ingresado Correctamente';
+    END IF;
+END$$
+
+DELIMITER $$
+CREATE PROCEDURE proc_insertar_marca(
+    IN nombre VARCHAR(50),
     OUT p_resultado VARCHAR(255)
 )
 BEGIN
@@ -83,10 +131,10 @@ BEGIN
         SET v_error = 1;
     END;
 
-    INSERT INTO zapatos (modelo, talla, fecha_fabricacion, disponibilidad, id_marca)
-    VALUES (modelo, talla, fecha_fabricacion, disponibilidad, id_marca);
+    INSERT INTO marcas (nombre_marca)
+    VALUES (nombre);
 
     IF v_error = 0 THEN
-        SET p_resultado = 'Zapato Ingresado Correctamente';
+        SET p_resultado = 'Marca Ingresada Correctamente';
     END IF;
 END$$
